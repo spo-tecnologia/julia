@@ -24,12 +24,12 @@ As principais configurações que devem ser feitas são:
 APP_ENV= #Ambiente da aplicação (local).  
 APP_NAME= #Nome da aplicação ("Julia").  
 APP_URL=  #URL da aplicação (http://localhost:8080).  
-TEMPERATURE= #Controle de aleatoriedade da resposta .
-TOP_P= #Parâmetro de diversidade. Exemplo: 1
-MAX_OUTPUT_TOKENS= #Limite de tokens na resposta. Exemplo: 24000
-TOP_K= #Parâmetro de controle de palavras mais prováveis. Exemplo: 64
-RESPONSE_MIME_TYPE= #Tipo de resposta. (text/plain).
-GENAI_API_KEY=  #Chave da API para IA.
+TEMPERATURE= #Controle de aleatoriedade da resposta.  
+TOP_P= #Parâmetro de diversidade. Exemplo: 1  
+MAX_OUTPUT_TOKENS= #Limite de tokens na resposta. Exemplo: 24000  
+TOP_K= #Parâmetro de controle de palavras mais prováveis. Exemplo: 64  
+RESPONSE_MIME_TYPE= #Tipo de resposta. (text/plain).  
+GENAI_API_KEY=  #Chave da API para IA.  
 
 Construa a imagem docker:
 ```shell
@@ -47,7 +47,6 @@ Insira no arquivo 'TODO.MD' a descrição da sua tarefa
 
 #### Exemplo
 
-Rodar uma tarefa de um CRUD de uma nova entidade:
 Tarefa: CRUD company
 Campos
 name: tipo texto, obrigatório
@@ -63,17 +62,17 @@ docker exec -it julia_code python3 /app/julia.py --file TODO.MD`
 
 Você vera uma saída semelhante a esta abaixo com o passo a passo gerado
 
-Assinaturas de métodos extraídas de 80 arquivos.
-Lista de arquivos a serem criados e alterados:
-models/company.go
-http/controllers/company_controller.go
-http/requests/create_company_input.go
-http/requests/update_company_input.go
-policies/company_policy.go
-repository/company_repository.go
-routes/companies.go
-tests/company_test.go
-tests/factories/company_factory.go
+Assinaturas de métodos extraídas de 80 arquivos.  
+Lista de arquivos a serem criados e alterados:  
+models/company.go  
+http/controllers/company_controller.go  
+http/requests/create_company_input.go  
+http/requests/update_company_input.go  
+policies/company_policy.go  
+repository/company_repository.go  
+routes/companies.go  
+tests/company_test.go  
+tests/factories/company_factory.go  
 
 
 ## Estudo

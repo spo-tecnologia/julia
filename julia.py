@@ -183,8 +183,7 @@ def check_go_build_main():
     
 def get_model(system_instruction):
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        # model_name="gemini-2.0-flash-ex",
+        model_name="gemini-2.0-flash",
         generation_config=GENERATION_CONFIG,
         system_instruction=system_instruction
     )

@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  julia:
+    container_name: julia_code
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - GENAI_API_KEY=${GENAI_API_KEY}
+      - TEMPERATURE=0.7
+      - TOP_P=0.9
+      - TOP_K=40
+      - MAX_OUTPUT_TOKENS=2048
+      - RESPONSE_MIME_TYPE=text/plain
+    stdin_open: true
+    tty: true

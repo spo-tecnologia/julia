@@ -21,9 +21,9 @@ cp .env.example .env
 
 As principais configurações que devem ser feitas são:
 
-APP_ENV= #Ambiente da aplicação (local).
-APP_NAME= #Nome da aplicação ("Julia").
-APP_URL=  #URL da aplicação (http://localhost:8080).
+APP_ENV= #Ambiente da aplicação (local).  
+APP_NAME= #Nome da aplicação ("Julia").  
+APP_URL=  #URL da aplicação (http://localhost:8080).  
 TEMPERATURE= #Controle de aleatoriedade da resposta .
 TOP_P= #Parâmetro de diversidade. Exemplo: 1
 MAX_OUTPUT_TOKENS= #Limite de tokens na resposta. Exemplo: 24000

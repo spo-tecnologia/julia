@@ -15,7 +15,11 @@ func HandleRequest() {
 	}
 	r := gin.Default()
 	InitRoutes(r)
-	r.Run()
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+	r.Run(":" + port)
 }
 
 func InitRoutes(r *gin.Engine) *gin.Engine {

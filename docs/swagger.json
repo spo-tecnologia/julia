@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API of Julia 2",
-        "title": "Julia API 2",
+        "description": "API of Julia",
+        "title": "Julia API ",
         "contact": {
             "name": "API Support",
             "url": "https://spotec.app/contato/",

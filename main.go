@@ -9,7 +9,7 @@ import (
 
 // swagger embed files
 
-// @title           Julia API 2
+// @title           Julia API
 // @version         0.7.4
 // @description     API of Julia 2
 

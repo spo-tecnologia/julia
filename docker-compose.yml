@@ -1,11 +1,9 @@
-version: "3.8"
-
 services:
-  julia:
+  julia_code:
     container_name: julia_code
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./docker/python.Dockerfile
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
@@ -18,3 +16,15 @@ services:
       - RESPONSE_MIME_TYPE=text/plain
     stdin_open: true
     tty: true
+
+  julia_api_go:
+    build:
+      dockerfile: ./docker/golang.Dockerfile
+      context: .
+    image: golang
+    restart: always
+    container_name: ${APP_NAME}
+    ports:
+      - "${APP_PORT}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

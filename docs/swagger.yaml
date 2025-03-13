@@ -323,7 +323,7 @@ info:
     name: API Support
     url: https://spotec.app/contato/
   description: API of Julia 2
-  title: Julia API 2
+  title: Julia API
   version: 0.7.4
 paths:
   /files:

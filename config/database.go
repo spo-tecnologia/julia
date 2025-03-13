@@ -69,7 +69,7 @@ func CreateOrUpdateAdminAccount() {
 	var user models.User
 	DB.First(&user, "email = ?", "admin@admin.com")
 	user.Name = "Admin"
-	user.Email = "admin@spotec.app"
+	user.Email = "admin@admin.com"
 	user.EmailVerifiedAt = time.Now()
 	user.Password = string(hashedPassword)
 	user.Profile = enums.UserProfileEnumAdministrator

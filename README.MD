@@ -111,6 +111,20 @@ routes/companies.go
 tests/company_test.go  
 tests/factories/company_factory.go  
 
+#### Integração com Jira
+
+Para realizar a integração com tarefas do Jira você deve preencher as variáveis .env
+
+JIRA_URL="" #URL do seu ambiente Jira  
+JIRA_USER="" #Usuário do Jira  
+JIRA_ASSIGNEE="" #Usuário que será usadao como base para buscar as tarefas na filtragem  
+JIRA_API_TOKEN="" #Token API Jira  
+
+Execute no terminal
+
+```shell
+docker exec -it julia_code python3 /app/julia_jira.py --file TODO.MD`
+```
 
 ## Estudo
 

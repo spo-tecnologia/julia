@@ -6,7 +6,7 @@
 - [Instalação](#Instalação)
 - [Como utilizar](#Como-utilizar)
 - [Estudo](#Estudo)
-- [Deploy](#Deploy-API)
+- [Deploy API GO](#Deploy-API)
 - [Documentação](#Documentação)
 - [Comandos úteis](#Comandos-úteis)
 

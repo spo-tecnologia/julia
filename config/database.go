@@ -61,13 +61,13 @@ func migrate(database *gorm.DB) {
 }
 
 func CreateOrUpdateAdminAccount() {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("bacl8message"), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("julia2admin"), bcrypt.DefaultCost)
 	if err != nil {
 		panic("Failed to hahsed password!!! error:" + err.Error())
 	}
 
 	var user models.User
-	DB.First(&user, "email = ?", "admin@spotec.app")
+	DB.First(&user, "email = ?", "admin@admin.com")
 	user.Name = "Admin"
 	user.Email = "admin@spotec.app"
 	user.EmailVerifiedAt = time.Now()

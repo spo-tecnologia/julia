@@ -12,4 +12,7 @@ func RegisterSampleRoutes(router *gin.RouterGroup) {
 	router.PUT("/sample_models/:id", controllers.UpdateSampleModel)
 	router.DELETE("/sample_models/:id", controllers.DeleteSampleModel)
 	router.GET("/sample_models_select", controllers.FindSamples)
+	router.POST("/sample_models/:id/duplicate", controllers.DuplicateSampleModel)
+	router.GET("/sample_models/export", controllers.ExportSamples)
+
 }

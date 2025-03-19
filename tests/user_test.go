@@ -18,8 +18,7 @@ import (
 func TestUserCreate(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)
@@ -34,8 +33,6 @@ func TestUserCreate(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	fmt.Println(recorder.Body.String())
-
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
 	var result map[string]string
@@ -48,8 +45,7 @@ func TestUserCreate(t *testing.T) {
 func TestUserFind(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)
@@ -59,8 +55,6 @@ func TestUserFind(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
@@ -72,8 +66,7 @@ func TestUserFind(t *testing.T) {
 func TestUserUpdatee(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)
@@ -88,8 +81,6 @@ func TestUserUpdatee(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	fmt.Println(recorder.Body.String())
-
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
 	var resultModel models.User
@@ -100,8 +91,7 @@ func TestUserUpdatee(t *testing.T) {
 func TestUserUpdateFcmToken(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)
@@ -113,8 +103,6 @@ func TestUserUpdateFcmToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
@@ -128,8 +116,7 @@ func TestUserUpdateFcmToken(t *testing.T) {
 func TestUserDelete(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)
@@ -139,8 +126,6 @@ func TestUserDelete(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
@@ -152,8 +137,7 @@ func TestUserDelete(t *testing.T) {
 func TestUserSelect(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateUser()
 	assert.Nil(t, err)

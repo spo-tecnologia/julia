@@ -3,10 +3,13 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/OdairPianta/julia/config"
+	"github.com/OdairPianta/julia/exports"
 	"github.com/OdairPianta/julia/http/requests"
 	"github.com/OdairPianta/julia/models"
 	"github.com/OdairPianta/julia/policies"
@@ -110,6 +113,7 @@ func CreateSampleModel(context *gin.Context) {
 	}
 
 	sample_model := models.SampleModel{
+		Name:           input.Name,
 		SampleString:   input.SampleString,
 		SampleUnique:   input.SampleUnique,
 		SampleDate:     time.Now(),
@@ -161,13 +165,14 @@ func UpdateSampleModel(context *gin.Context) {
 	}
 
 	updatedSampleModel := models.SampleModel{
+		Name:           input.Name,
 		SampleString:   input.SampleString,
 		SampleUnique:   input.SampleUnique,
 		SampleDate:     input.SampleDate,
 		SampleNullable: input.SampleNullable,
 		SampleDouble:   input.SampleDouble,
-		SampleBool:     input.SampleBool,
 		SampleDetailID: input.SampleDetailID,
+		OrderNumber:    input.OrderNumber,
 	}
 
 	err = repository.UpdateSampleModel(model, &updatedSampleModel)
@@ -225,7 +230,7 @@ func DeleteSampleModel(context *gin.Context) {
 // @Param search query string false "Search by sample_string"
 // @Param limit query int false "Limit the number of results"
 // @Param offset query int false "Offset the results"
-// @Success 200 {array} models.SampleModel "ok"
+// @Success 200 {array} models.Assessment "ok"
 // @Failure 400 {object} models.APIMessage "Bad request"
 // @Failure 404 {object} models.APIMessage "Not found"
 // @Router /sample_models_select [get]
@@ -249,4 +254,87 @@ func SelectSamples(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, itemSelects)
+}
+
+// @Summary Duplicate Sample
+// @Description Duplicate an existing sample.
+// @Tags sample_models
+// @Accept json
+// @Produce json
+// @Param id path int true "Sample ID"
+// @Success 200 {object} models.SampleModel "ok"
+// @Failure 400 {object} models.APIMessage "Bad request"
+// @Failure 401 {object} models.APIMessage "Unauthorized"
+// @Router /sample_models/{id}/duplicate [post]
+// @Security Bearer
+func DuplicateSampleModel(c *gin.Context) {
+	sample, err := repository.FindSampleByID(c.Param("id"))
+	if err != nil {
+		sentry.CaptureException(err)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Exemplo não encontrada!"})
+		return
+	}
+
+	user := c.MustGet("user").(models.User)
+	if !policies.NewSamplePolicy(&user).Update(sample) {
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Você não tem permissão!"})
+		return
+	}
+	sample.ID = 0
+	sample.Name = sample.Name + " - (Cópia)"
+	sample.SampleUnique = sample.SampleUnique + " - (Cópia)"
+	sample.CreatedAt = time.Now()
+	sample.UpdatedAt = time.Now()
+
+	err = repository.CreateSampleModel(sample)
+	if err != nil {
+		sentry.CaptureException(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Erro ao duplicar sample model: %s", err.Error())})
+		return
+	}
+
+	c.JSON(http.StatusOK, sample)
+}
+
+// @Summary Export samples
+// @Schemes
+// @Description Export samples
+// @Tags sample_models
+// @Accept json
+// @Produce json
+// @Param search query string false "Search by id or sample_string or sample_unique or sample_nullable"
+// @Success 200 {array} models.APIUrl "url"
+// @Failure 400 {object} models.APIMessage "Bad request"
+// @Failure 404 {object} models.APIMessage "Not found"
+// @Router /samples/export [get]
+// @Security Bearer
+func ExportSamples(context *gin.Context) {
+	user := context.MustGet("user").(models.User)
+	if !policies.NewSamplePolicy(&user).ViewAny() {
+		context.JSON(http.StatusUnauthorized, gin.H{"message": "Você não tem permissão!"})
+		return
+	}
+
+	search := context.Query("search")
+	limit, _ := strconv.Atoi(context.Query("limit"))
+	offset, _ := strconv.Atoi(context.Query("offset"))
+
+	sampleModels, err := repository.FindSamples(search, &limit, &offset)
+	if err != nil {
+		sentry.CaptureException(err)
+		context.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Erro: %s", err.Error())})
+		return
+	}
+
+	fileName, err := exports.ExportSampleModels(sampleModels)
+	if err != nil {
+		sentry.CaptureException(err)
+		context.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Erro ao exportar: %s", err.Error())})
+		return
+	}
+	appUrl := os.Getenv("APP_URL")
+	fileURL := fmt.Sprintf("%s/api/storage/temp/%s", appUrl, filepath.Base(fileName))
+
+	response := models.APIUrl{URL: fileURL}
+	context.JSON(http.StatusOK, response)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -32,12 +33,16 @@ func setupDatabase() (*gorm.DB, func()) {
 }
 
 func routesSetup() *gin.Engine {
+	ginMode := os.Getenv("GIN_MODE")
+	if ginMode != "" {
+		gin.SetMode(ginMode)
+	}
 	r := gin.Default()
 	routes.InitRoutes(r)
 	return r
 }
 
-func initUser() (user models.User, stringToken string, err error) {
+func initUser() (user models.User, stringToken string) {
 	user = models.User{
 		Name:               fakers.Name(),
 		Email:              fakers.Email(),
@@ -49,18 +54,18 @@ func initUser() (user models.User, stringToken string, err error) {
 		ResetPasswordToken: fakers.UUID(),
 		Profile:            enums.UserProfileEnumAdministrator,
 	}
-	err = config.DB.Create(&user).Error
+	err := config.DB.Create(&user).Error
 	if err != nil {
 		fmt.Println(err)
-		return user, "", err
+		return
 	}
 
 	token, errToken := token.GenerateToken(user.ID)
 	if errToken != nil {
 		fmt.Println(err)
-		return user, "", errToken
+		return
 	}
-	return user, token, nil
+	return user, token
 }
 
 func TestFindGitHeadFilesReturnAccessDeniedResponse(t *testing.T) {
@@ -71,8 +76,6 @@ func TestFindGitHeadFilesReturnAccessDeniedResponse(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Unauthorized response is expected")
 
@@ -90,8 +93,6 @@ func TestFindGitConfigFilesReturnAccessDeniedResponse(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	fmt.Println(recorder.Body.String())
-
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Unauthorized response is expected")
 
 	var resultModel map[string]string
@@ -107,8 +108,6 @@ func TestFindEnvFilesReturnAccessDeniedResponse(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusUnauthorized, recorder.Code, "Unauthorized response is expected")
 

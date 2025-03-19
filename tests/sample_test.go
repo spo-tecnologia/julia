@@ -17,8 +17,7 @@ import (
 func TestSampleModelFindAll(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -39,8 +38,7 @@ func TestSampleModelFindAll(t *testing.T) {
 func TestSampleModelCreate(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -65,8 +63,7 @@ func TestSampleModelCreate(t *testing.T) {
 func TestSampleModelFind(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -76,8 +73,6 @@ func TestSampleModelFind(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "Returned body: "+recorder.Body.String())
 
@@ -89,8 +84,7 @@ func TestSampleModelFind(t *testing.T) {
 func TestSampleModelUpdate(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -118,8 +112,7 @@ func TestSampleModelUpdate(t *testing.T) {
 func TestSampleModelDelete(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -129,8 +122,6 @@ func TestSampleModelDelete(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, request)
-
-	fmt.Println(recorder.Body.String())
 
 	assert.Equal(t, http.StatusOK, recorder.Code, "Returned body: "+recorder.Body.String())
 
@@ -142,8 +133,7 @@ func TestSampleModelDelete(t *testing.T) {
 func TestSampleModelSelect(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	model, err := factories.CreateSampleModel()
 	assert.Nil(t, err)
@@ -159,4 +149,49 @@ func TestSampleModelSelect(t *testing.T) {
 	_ = json.Unmarshal(recorder.Body.Bytes(), &resultModels)
 	assert.NotNil(t, resultModels, "Returned body: "+recorder.Body.String())
 	assert.Greater(t, len(resultModels), 0, "Returned body: "+recorder.Body.String())
+}
+
+func TestDuplicateSampleModel(t *testing.T) {
+	setupDatabase()
+	router := routesSetup()
+	_, token := initUser()
+
+	originalSampleModel, err := factories.CreateSampleModel()
+	assert.NoError(t, err)
+
+	url := fmt.Sprintf("/api/sample_models/%d/duplicate", originalSampleModel.ID)
+	req, _ := http.NewRequest("POST", url, nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, req)
+
+	assert.Equal(t, http.StatusOK, recorder.Code, "Returned body: "+recorder.Body.String())
+
+	var duplicatedSampleModel models.SampleModel
+	err = json.Unmarshal(recorder.Body.Bytes(), &duplicatedSampleModel)
+	assert.NoError(t, err, "Returned body: "+recorder.Body.String())
+	assert.NotEqual(t, originalSampleModel.ID, duplicatedSampleModel.ID)
+	assert.Equal(t, originalSampleModel.Name+" - (Cópia)", duplicatedSampleModel.Name, "Returned body: "+recorder.Body.String())
+	assert.Equal(t, originalSampleModel.SampleUnique+" - (Cópia)", duplicatedSampleModel.SampleUnique, "Returned body: "+recorder.Body.String())
+	assert.NotEqual(t, originalSampleModel.ID, duplicatedSampleModel.ID)
+}
+
+func TestSampleModelExportl(t *testing.T) {
+	setupDatabase()
+	router := routesSetup()
+	_, token := initUser()
+
+	_, err := factories.CreateSampleModel()
+	assert.Nil(t, err)
+
+	request, _ := http.NewRequest("GET", "/api/sample_models/export", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	assert.Equal(t, http.StatusOK, recorder.Code, "Returned body: "+recorder.Body.String())
+	var resultModel models.APIUrl
+	_ = json.Unmarshal(recorder.Body.Bytes(), &resultModel)
+	assert.NotNil(t, resultModel, "Returned body: "+recorder.Body.String())
 }

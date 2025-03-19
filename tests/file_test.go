@@ -18,8 +18,7 @@ import (
 func TestFileFindAll(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	fmt.Println(`>> GET: /api/files`)
 
@@ -39,8 +38,7 @@ func TestFileFindAll(t *testing.T) {
 func TestFileCreate(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
@@ -50,8 +48,8 @@ func TestFileCreate(t *testing.T) {
 		httpmock.NewStringResponder(200, `{"public_url": "https://example.com/image.jpg"}`))
 
 	input := map[string]interface{}{
-		"base_64":   "base64string",
-		"extension": "jpg",
+		"base_64":   "iVBORw0KGgoAAAANSUhEUgAAABkAAAASCAYAAACuLnWgAAAABHNCSVQICAgIfAhkiAAAABl0RVh0U29mdHdhcmUAZ25vbWUtc2NyZWVuc2hvdO8Dvz4AAAAmdEVYdENyZWF0aW9uIFRpbWUAc2V4IDE3IGphbiAyMDI1IDE0OjQ3OjI5crPYYQAAACNJREFUOI1j/P///38GGgMmWlswasmoJaOWjFoyasmoJdQCAMo0BCDSTR6+AAAAAElFTkSuQmCC",
+		"extension": "png",
 		"path":      "uploads/users/1/",
 		"name":      "profile_picture",
 	}
@@ -64,8 +62,6 @@ func TestFileCreate(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	fmt.Println(recorder.Body.String())
-
 	assert.Equal(t, http.StatusOK, recorder.Code, "OK response is expected")
 
 	var file models.File
@@ -77,11 +73,14 @@ func TestFileCreate(t *testing.T) {
 func TestFileCreateWithUrl(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
+
+	gryphonURL := os.Getenv("GRYPHON_API_BASE_URL") + "/files/base64/create"
+	httpmock.RegisterResponder("POST", gryphonURL,
+		httpmock.NewStringResponder(200, `{"public_url": "https://example.com/image.jpg"}`))
 
 	input := map[string]interface{}{
 		"base_64":    nil,
@@ -99,8 +98,6 @@ func TestFileCreateWithUrl(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	fmt.Println(recorder.Body.String())
-
 	assert.Equal(t, http.StatusOK, recorder.Code, "Body: "+recorder.Body.String())
 
 	var file models.File
@@ -112,8 +109,7 @@ func TestFileCreateWithUrl(t *testing.T) {
 func TestFileDelete(t *testing.T) {
 	setupDatabase()
 	router := routesSetup()
-	_, token, err := initUser()
-	assert.Nil(t, err)
+	_, token := initUser()
 
 	file := models.File{
 		Extension: "jpg",

@@ -7,7 +7,7 @@ import (
 
 func FindSamples(search string, limit *int, offset *int) ([]models.SampleModel, error) {
 	var sampleModels []models.SampleModel
-	query := config.DB.Preload("SampleDetail").Preload("SampleItems")
+	query := config.DB.Preload("SampleDetail").Preload("SampleItems").Order("order_number")
 	if search != "" {
 		query = query.Where("id LIKE ? OR sample_string LIKE ? OR sample_unique LIKE ? OR sample_nullable LIKE ?", "%"+search+"%", "%"+search+"%", "%"+search+"%", "%"+search+"%")
 	}
@@ -34,6 +34,8 @@ func FindSampleByID(ID string) (*models.SampleModel, error) {
 }
 
 func CreateSampleModel(sampleModel *models.SampleModel) error {
+	maxOrder, _ := FindMaxSampleModelOrderNumber()
+	sampleModel.OrderNumber = maxOrder + 1
 	return config.DB.Create(&sampleModel).Error
 }
 
@@ -58,4 +60,13 @@ func FindSampleItemSelects(search string, limit *int, offset *int) ([]models.Ite
 		})
 	}
 	return itemSelects, nil
+}
+
+func FindMaxSampleModelOrderNumber() (int, error) {
+	var module models.SampleModel
+	err := config.DB.Order("order_number desc").First(&module).Error
+	if err != nil {
+		return 0, err
+	}
+	return module.OrderNumber, nil
 }

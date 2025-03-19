@@ -1,5 +1,3 @@
-// tests/factories/sample_factory.go
-
 package factories
 
 import (
@@ -18,12 +16,15 @@ func CreateSampleModel() (*models.SampleModel, error) {
 	}
 
 	model := &models.SampleModel{
+		Name:           fakers.Word(),
 		SampleString:   fakers.Word(),
 		SampleUnique:   fakers.UUID(),
 		SampleDate:     time.Now(),
 		SampleNullable: fakers.Word(),
 		SampleDouble:   rand.Float64(),
 		SampleDetailID: sampleDetail.ID,
+		SampleDetail:   sampleDetail,
+		OrderNumber:    1,
 	}
 
 	err = config.DB.Create(&model).Error

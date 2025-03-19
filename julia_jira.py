@@ -13,22 +13,22 @@ load_dotenv()
 JIRA_URL = os.getenv("JIRA_URL")
 JIRA_USER = os.getenv("JIRA_USER")
 JIRA_API_TOKEN = os.getenv("JIRA_API_TOKEN")
-ASSIGNEE = os.getenv("JIRA_ASSIGNEE")
+JIRA_JQL_QUERY = os.getenv("JIRA_JQL_QUERY")
 GENAI_API_KEY = os.getenv("GENAI_API_KEY")
 
 DIRECTORIES = [
+    "models",
     "enums",
     "http",
     "jobs",
     "main.go",
-    "models",
     "notifications",
     "policies",
     "repository",
     "resources",
     "routes",
     "services",
-    "tests ",
+    "tests",
 ]
 
 SAMPLE_FILES = [
@@ -42,12 +42,14 @@ SAMPLE_FILES = [
     "models/sample_detail.go",
     "models/sample_item.go",
     "models/sample_model.go",
-    "models/setup.go",
     "notifications/sample_notification.go",
     "policies/sample_policy.go",
     "repository/sample_repository.go",
     "routes/routes.go",
+    "routes/samples.go",
     "tests/sample_test.go",
+    "tests/factories/sample_factory.go",
+    "tests/factories/sample_detail_factory.go",
 ]
 
 genai.configure(api_key=GENAI_API_KEY)
@@ -114,6 +116,49 @@ def extract_method_signatures(file_list):
 
     return "\n\n".join(signatures)
 
+def clean_response(response):
+    return response.replace("```go", "").replace("``go", "").replace("`` go", "").replace("```", "").replace("``", "")
+
+def extract_algorithm(response_text):
+    code_pattern = re.compile(r'```(?:\w+\n)?(.*?)```', re.DOTALL)
+    match = code_pattern.search(response_text)
+    
+    if match:
+        return match.group(1).strip()
+    else:
+        return clean_response(response_text)
+
+def clean_file_response(response):
+    return response.replace(" - ", "").replace("- ", "").strip()
+
+def slugify(text):
+    text = text.lower()
+    text = re.sub(r'\s+', '-', text) 
+    text = re.sub(r'[^\w\-]', '', text)
+    return text
+
+def branch_exists_locally(branch_name):
+    result = subprocess.run(["git", "branch", "--list", branch_name], capture_output=True, text=True)
+    return branch_name in result.stdout
+
+def branch_exists_remotely(branch_name):
+    result = subprocess.run(["git", "ls-remote", "--heads", "origin", branch_name], capture_output=True, text=True)
+    return branch_name in result.stdout
+
+def git_checkout_branch(branch_name):    
+    if branch_exists_locally(branch_name):
+        print(f"Branch local {branch_name} já existe. Fazendo checkout.")
+        subprocess.run(["git", "checkout", branch_name], check=True)
+    elif branch_exists_remotely(branch_name):
+        print(f"Branch remota {branch_name} já existe. Fazendo checkout e pull.")
+        subprocess.run(["git", "checkout", branch_name], check=True)
+        subprocess.run(["git", "pull", "origin", branch_name], check=True)
+    else:
+        print(f"Criando nova branch: {branch_name}")
+        subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+    
+    return branch_name
+
 def extract_text_from_description(description):
     plain_text = ""
     if 'content' in description:
@@ -124,9 +169,8 @@ def extract_text_from_description(description):
                         plain_text += content_item.get('text', '') + "\n"
     return plain_text.strip()
 
-def get_jira_issues_for_user(jira_url, jira_user, jira_api_token, assignee):
+def get_jira_issues_for_user(jira_url, jira_user, jira_api_token, jql_query):
     search_url = f"{jira_url}/rest/api/3/search"
-    jql_query = f"project = IM AND assignee={assignee} AND status = \"To Do\" AND resolution=Unresolved ORDER BY created DESC"
     
     headers = {"Accept": "application/json"}
     auth = HTTPBasicAuth(jira_user, jira_api_token)
@@ -134,6 +178,8 @@ def get_jira_issues_for_user(jira_url, jira_user, jira_api_token, assignee):
     params = {"jql": jql_query, "maxResults": 1, "fields": "summary,description"}
     
     response = requests.get(search_url, headers=headers, params=params, auth=auth)
+
+    print(response.json())
     
     if response.status_code == 200:
         issues_data = response.json()
@@ -146,7 +192,7 @@ def get_jira_issues_for_user(jira_url, jira_user, jira_api_token, assignee):
         else:
             return None, None, None
     else:
-        raise Exception(f"Erro ao buscar tarefas para o usuário {assignee}: {response.status_code} {response.text}")
+        raise Exception(f"Erro ao buscar tarefas: {response.status_code} {response.text}")
 
 def clean_response(response):
     return response.replace("```go", "").replace("``go", "").replace("`` go", "").replace("```", "").replace("``", "")
@@ -206,38 +252,10 @@ def get_branch_name(issue_key, title, description):
     branch_name = branch_name if branch_name == "" else f"{issue_key}-{slugify(title)}"
     return branch_name
 
-def slugify(text):
-    text = text.lower()
-    text = re.sub(r'\s+', '-', text) 
-    text = re.sub(r'[^\w\-]', '', text)
-    return text
-
-def branch_exists_locally(branch_name):
-    result = subprocess.run(["git", "branch", "--list", branch_name], capture_output=True, text=True)
-    return branch_name in result.stdout
-
-def branch_exists_remotely(branch_name):
-    result = subprocess.run(["git", "ls-remote", "--heads", "origin", branch_name], capture_output=True, text=True)
-    return branch_name in result.stdout
-
-def git_checkout_branch(branch_name):    
-    if branch_exists_locally(branch_name):
-        print(f"Branch local {branch_name} já existe. Fazendo checkout.")
-        subprocess.run(["git", "checkout", branch_name], check=True)
-    elif branch_exists_remotely(branch_name):
-        print(f"Branch remota {branch_name} já existe. Fazendo checkout e pull.")
-        subprocess.run(["git", "checkout", branch_name], check=True)
-        subprocess.run(["git", "pull", "origin", branch_name], check=True)
-    else:
-        print(f"Criando nova branch: {branch_name}")
-        subprocess.run(["git", "checkout", "-b", branch_name], check=True)
-    
-    return branch_name
-
 def check_go_build_main():
     try:
         result = subprocess.run(
-            ["go", "build", "-o", "/dev/null", "main.go"],  # compila sem gerar um binário
+            ["go", "build", "-o", "/dev/null", "main.go"], 
             capture_output=True,
             text=True,
             timeout=5
@@ -262,7 +280,7 @@ def check_go_build_main():
     
 def get_model(system_instruction):
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="gemini-2.0-flash",
         generation_config=GENERATION_CONFIG,
         system_instruction=system_instruction
     )
@@ -271,32 +289,33 @@ def get_model(system_instruction):
 def format_with_goimports(file_path):
     try:
         subprocess.run(["goimports", "-w", file_path], check=True)
-        print(f"Arquivo {file_path} formatado com goimports")
     except subprocess.CalledProcessError as e:
         print(f"Erro ao formatar o arquivo {file_path} com goimports: {e}")
     except Exception as e:
         print(f"Erro inesperado ao tentar formatar o arquivo {file_path} com goimports: {e}")
 
-def generate_code(title, description):
+def print_token_count(model, chat_session):
+    token_count = model.count_tokens(chat_session.history)
+    print(f"Token count {token_count}")
+
+def generate_code(description):
+    description = description + """\n\nResultados esperados:
+    Criar ou atualizar model, controller, requests, policy, repository, routes e outros arquivos
+    Atualizar config/database.go caso sejam criadas ou alterados models
+    Atualizar routes/routes.go caso sejam criadas ou alteradas rotas
+    Criar testes para todos as funções do controller
+    Criar arquivos com a mesma estrutura do sample"""
+
     files_list = find_files_list(DIRECTORIES)
     file_list_string = "\n".join(files_list)
     method_signatures = extract_method_signatures(files_list)
     print(f"Assinaturas de métodos extraídas de {len(files_list)} arquivos.")
     
-    model = get_model("Considere os arquivos e métodos do projeto GOLANG abaixo\n" + method_signatures)
+    model = get_model("Você em um desenvolvedor especialista em GOLANG. Considere os arquivos e métodos do projeto abaixo\n" + method_signatures)
     chat_session = model.start_chat()
-    
-    first_message = f"Considere que será executada a tarefa\nTitulo: {title}\nDescrição: {description}\n\n Liste quais arquivos que já existem você precisa ver a fim de que a tarefa seja executada da forma mais correta possível. Retorne somente a lista de arquivos, sem formatações ou outros dados"
-    response = chat_session.send_message(first_message)
-    print(f"Lista de arquivos a serem vistos:\n {response.text}")
-    sample_files_string = clean_response(response.text)
-    sample_files_list = sample_files_string.split("\n")
-    sample_files_list = [clean_file_response(file) for file in sample_files_list]
-    sample_files_list = list(set(SAMPLE_FILES) | set(sample_files_list))
-    sample_files_list = list(dict.fromkeys(sample_files_list))
-    sample_files_content = find_files_content(sample_files_list)
 
-    second_message = f"Aqui está o conteúdo completo dos arquivos mais alguns exemplos.\n\n{sample_files_content}. \n\nListe os arquivos que serão criado e alterados. Retorne somente a lista de arquivos, sem formatações ou outros dados"
+    sample_files_content = find_files_content(SAMPLE_FILES)
+    second_message = f"Considere que será executada a tarefa:\n {description}\n\nSiga o padrão de código dos arquivos a seguir.\n\n{sample_files_content}. \n\nListe os arquivos que serão criado e alterados para atender o escopo da tarefa conforme arquivos de exemplo enviados acima. Retorne somente a lista de arquivos, sem formatações ou outros dados"
     response = chat_session.send_message(second_message)
     print(f"Lista de arquivos a serem criados e alterados:\n {response.text}")
     create_update_files_string = clean_response(response.text)
@@ -307,23 +326,31 @@ def generate_code(title, description):
         if file_path == "":
             continue
 
-        print(f"Criando arquivo {file_path}")
-        message = f"Crie o arquivo {file_path}. Responda somente com o código"
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                existing_content = file.read()
+            print(f"Arquivo {file_path} já existe. Enviando conteúdo atual para atualização.")
+            message = f"O arquivo {file_path} já existe com o seguinte conteúdo:\n{existing_content}\nAtualize o arquivo para atender o escopo da tarefa. Responda somente com o código. Siga a estrutura dos arquivos sample existentes."
+        else:
+            print(f"Criando arquivo {file_path}")
+            message = f"Crie o arquivo {file_path}. Responda somente com o código. Siga a estrutura dos arquivos sample existentes."
+
+
         response = chat_session.send_message(message)
-        file_content = clean_response(response.text)
+        file_content = extract_algorithm(response.text)
 
         try:
             with open(file_path, 'w') as file:
                 file.write(file_content)
             print(f"Arquivo {file_path} criado")
             format_with_goimports(file_path)
-            git_add_file(file_path)
+            # git_add_file(file_path)
         except Exception as e:
             print(f"Falha ao criar o arquivo {file_path}: {str(e)}")
 
         # break  # Apenas para criar o primeiro arquivo, remover para processar todos
-
-    attempt_go_build_with_correction(chat_session)
+    print_token_count(model, chat_session)
+    # attempt_go_build_with_correction(chat_session)
     commit_message = get_commit_message(chat_session)
     return commit_message
 
@@ -400,26 +427,29 @@ def main():
 
     while True:
         try:
-            issue_key, title, description = get_jira_issues_for_user(JIRA_URL, JIRA_USER, JIRA_API_TOKEN, ASSIGNEE)
+            issue_key, title, description = get_jira_issues_for_user(JIRA_URL, JIRA_USER, JIRA_API_TOKEN, JIRA_JQL_QUERY)
+            print(issue_key, title, description)
             if issue_key and title and description:
                 if issue_key not in processed_tasks:
-                    print(f"New task: {issue_key} - {title}")
+                    print(f"Nova tarefa: {issue_key} - {title}")
 
                     processed_tasks.add(issue_key)
                     
                     branch_name = get_branch_name(issue_key, title, description)
                     print(f"Branch name: {branch_name}")
                     
-                    # git_checkout_branch(branch_name)
-                    # print(f"checkout to {branch_name}")
+                    git_checkout_branch(branch_name)
+                    print(f"Checkout para {branch_name}")
+
+                    task_description = f"{title}\n\n{description}"
                     
-                    commit_message = generate_code(title, description)
-                    print(f"Commit message: {commit_message}")
+                    commit_message = generate_code(task_description)
+                    print(f"Mensagem de commit: {commit_message}")
 
-                    # git_commit(commit_message)
+                    git_commit(commit_message)
 
-                    # git_push(branch_name)
-                    # print(f"git push {branch_name}")
+                    git_push(branch_name)
+                    print(f"git push {branch_name}")
 
                     transition_to_review(JIRA_URL, JIRA_USER, JIRA_API_TOKEN, issue_key)
 
